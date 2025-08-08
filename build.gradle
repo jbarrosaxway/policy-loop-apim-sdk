@@ -38,15 +38,29 @@ dependencies {
     }
 }
 
-// Copia dependências de runtime para uma pasta local (usado pelos workflows de release)
+// Copia SOMENTE dependências AWS (se existirem). Pasta não é criada se não houver matching.
 tasks.register('copyExternalDependencies', Copy) {
-    description = 'Copia dependências de runtime para a pasta dependencies'
-    def dependenciesDir = file("dependencies")
-    dependenciesDir.mkdirs()
-    into dependenciesDir
+    description = 'Copia dependências AWS (se houver) para a pasta dependencies'
+    into file("dependencies")
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    from configurations.runtimeClasspath
-    rename { fileName -> "external-${fileName}" }
+    from(configurations.runtimeClasspath) {
+        include { fileTreeElement ->
+            def fileName = fileTreeElement.name
+            return fileName.contains('aws-java-sdk')
+        }
+        eachFile { fileCopyDetails ->
+            fileCopyDetails.name = "external-" + fileCopyDetails.name
+        }
+        includeEmptyDirs = false
+    }
+    doFirst {
+        // Se não houver arquivos para copiar, desabilita a task e evita criar diretório vazio
+        def hasAws = configurations.runtimeClasspath.find { it.name.contains('aws-java-sdk') } != null
+        if (!hasAws) {
+            logger.lifecycle("No AWS dependencies found; skipping copyExternalDependencies")
+            enabled = false
+        }
+    }
 }
 
 // Lista dependências de runtime (apoio à inspeção nos workflows)
