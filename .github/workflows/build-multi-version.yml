@@ -85,11 +85,64 @@ jobs:
           fi
         done
 
-    - name: Upload JARs as artifacts
+    - name: Create Versioned ZIPs
+      run: |
+        RELEASE_VERSION="${{ steps.build.outputs.release_version }}"
+        [ -z "$RELEASE_VERSION" ] && RELEASE_VERSION=$(grep -o "version = '[^']*'" build.gradle | cut -d"'" -f2)
+        [ -z "$RELEASE_VERSION" ] && RELEASE_VERSION="1.0.0"
+
+        VERSIONS="${{ steps.versions.outputs.versions }}"
+        RELEASE_DATE=$(date +%Y%m%d-%H%M%S)
+
+        for VERSION in ${VERSIONS//,/ }; do
+          echo "📦 Creating ZIP for $VERSION"
+          ZIP_DIR="policy-loop-apim-sdk-${RELEASE_VERSION}-${VERSION}-${RELEASE_DATE}"
+          mkdir -p "$ZIP_DIR"
+
+          BUILD_JAR=$(find build/libs -name "*.jar" | head -1)
+          [ -n "$BUILD_JAR" ] && cp "$BUILD_JAR" "$ZIP_DIR/"
+
+          [ -f "scripts/install-linux.sh" ] && cp scripts/install-linux.sh "$ZIP_DIR/"
+          [ -f "gradlew" ] && cp gradlew "$ZIP_DIR/"
+          [ -f "gradlew.bat" ] && cp gradlew.bat "$ZIP_DIR/"
+          [ -f "build.gradle" ] && cp build.gradle "$ZIP_DIR/"
+          [ -d "gradle" ] && cp -r gradle "$ZIP_DIR/"
+
+          if [ -d "src/main/resources/fed" ]; then
+            mkdir -p "$ZIP_DIR/src/main/resources/fed"
+            cp -r src/main/resources/fed/* "$ZIP_DIR/src/main/resources/fed/"
+          fi
+          if [ -d "src/main/resources/yaml" ]; then
+            mkdir -p "$ZIP_DIR/src/main/resources/yaml"
+            cp -r src/main/resources/yaml/* "$ZIP_DIR/src/main/resources/yaml/"
+          fi
+
+          mkdir -p "$ZIP_DIR/dependencies"
+          if [ -d "dependencies" ] && [ "$(ls -A dependencies 2>/dev/null)" ]; then
+            cp -r dependencies/* "$ZIP_DIR/dependencies/" 2>/dev/null || true
+          else
+            AWS_JARS=$(find build/libs -name "*aws-java-sdk-*" -type f 2>/dev/null)
+            if [ -n "$AWS_JARS" ]; then
+              for J in $AWS_JARS; do cp "$J" "$ZIP_DIR/dependencies/"; done
+            fi
+          fi
+
+          echo "# Policy Loop APIM SDK" > "$ZIP_DIR/README.md"
+          echo "" >> "$ZIP_DIR/README.md"
+          echo "Release Version: $RELEASE_VERSION" >> "$ZIP_DIR/README.md"
+          echo "Axway Version: $VERSION" >> "$ZIP_DIR/README.md"
+          echo "Release Date: $RELEASE_DATE" >> "$ZIP_DIR/README.md"
+
+          ZIP_NAME="policy-loop-apim-sdk-${RELEASE_VERSION}-${VERSION}-${RELEASE_DATE}.zip"
+          zip -r "$ZIP_NAME" "$ZIP_DIR/"
+          rm -rf "$ZIP_DIR"
+        done
+
+    - name: Upload ZIP Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: policy-loop-custom-filter-jars
-        path: build/libs/*.jar
+        name: policy-loop-apim-sdk-zips
+        path: policy-loop-apim-sdk-*.zip
         retention-days: 30
 
     - name: Create GitHub Release with ZIPs
@@ -129,7 +182,7 @@ jobs:
         PREVIOUS_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
         ./scripts/generate-release-notes.sh "$PREVIOUS_TAG" "$TAG_NAME" "$RELEASE_VERSION"
 
-        ZIP_FILES=$(ls build/libs/*.jar 2>/dev/null)
+        ZIP_FILES=$(ls policy-loop-apim-sdk-*.zip 2>/dev/null)
         if [ -n "$ZIP_FILES" ]; then
           gh release create "$TAG_NAME" \
             --title "Policy Loop Filter v${RELEASE_VERSION}" \
