@@ -1,0 +1,142 @@
+name: Build Multi-Version JARs
+
+on:
+  push:
+    branches: [ master, main, develop ]
+    paths:
+      - 'src/**'
+      - 'build.gradle'
+      - 'gradle/**'
+      - 'axway-versions.json'
+  pull_request:
+    branches: [ master, main, develop ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Axway version to build'
+        required: false
+        default: '7.7.0.20240830'
+        type: string
+
+jobs:
+  build-multi-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Parse versions
+      id: versions
+      run: |
+        if [ "${{ github.event.inputs.version }}" != "" ]; then
+          echo "versions=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          versions=$(jq -r '.versions | keys[]' axway-versions.json | tr '\n' ',' | sed 's/,$//')
+          echo "versions=$versions" >> $GITHUB_OUTPUT
+        fi
+        echo "📋 Versions to build: ${{ steps.versions.outputs.versions }}"
+
+    - name: Build for each version
+      id: build
+      run: |
+        echo "🔍 Running semantic versioning..."
+        chmod +x scripts/version-bump.sh
+        ./scripts/version-bump.sh
+
+        if [ -f ".version_info" ]; then
+          source .version_info
+          echo "📋 Calculated version: $NEW_VERSION ($VERSION_TYPE)"
+          RELEASE_VERSION="$NEW_VERSION"
+        else
+          echo "⚠️  .version_info file not found, using current version"
+          RELEASE_VERSION=$(grep -o "version = '[^']*'" build.gradle | cut -d"'" -f2)
+        fi
+
+        echo "release_version=$RELEASE_VERSION" >> $GITHUB_OUTPUT
+        VERSIONS="${{ steps.versions.outputs.versions }}"
+
+        for VERSION in ${VERSIONS//,/ }; do
+          echo "🔧 Build for version: $VERSION"
+          VERSION_INFO=$(jq -r ".versions[\"$VERSION\"]" axway-versions.json)
+          DOCKER_IMAGE=$(echo "$VERSION_INFO" | jq -r '.docker_image')
+          BASE_PATH=$(echo "$VERSION_INFO" | jq -r '.base_path')
+
+          docker run --rm \
+            -v "$(pwd):/workspace" \
+            -w /workspace \
+            "$DOCKER_IMAGE" \
+            gradle -Daxway.base="$BASE_PATH" clean build copyExternalDependencies listDependencies
+
+          JAR_FILE=$(find build/libs -name "*.jar" | head -1)
+          if [ -n "$JAR_FILE" ]; then
+            echo "✅ JAR created for $VERSION: $JAR_FILE"
+          else
+            echo "❌ JAR not found for $VERSION"; exit 1
+          fi
+        done
+
+    - name: Upload JARs as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: policy-loop-custom-filter-jars
+        path: build/libs/*.jar
+        retention-days: 30
+
+    - name: Create GitHub Release with ZIPs
+      if: github.event_name != 'pull_request' && contains(github.ref, 'master')
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+
+        RELEASE_VERSION="${{ steps.build.outputs.release_version }}"
+        if [ -z "$RELEASE_VERSION" ]; then
+          RELEASE_VERSION=$(grep -o "version = '[^']*'" build.gradle | cut -d"'" -f2)
+        fi
+        [ -z "$RELEASE_VERSION" ] && RELEASE_VERSION="1.0.0"
+
+        TAG_NAME="v${RELEASE_VERSION}"
+        ORIGINAL_VERSION="$RELEASE_VERSION"
+        while git tag -l "$TAG_NAME" | grep -q "$TAG_NAME"; do
+          NEW_PATCH=$(echo "$RELEASE_VERSION" | awk -F. '{print $3+1}')
+          RELEASE_VERSION=$(echo "$RELEASE_VERSION" | awk -F. '{print $1 "." $2 "." '$NEW_PATCH'}')
+          TAG_NAME="v${RELEASE_VERSION}"
+        done
+
+        if [ "$RELEASE_VERSION" != "$ORIGINAL_VERSION" ]; then
+          sed -i "s/version = '[^']*'/version = '$RELEASE_VERSION'/" build.gradle
+          git add build.gradle
+          git commit -m "chore: update version to $RELEASE_VERSION [skip ci]"
+          git push origin master
+        fi
+
+        git tag "$TAG_NAME"
+        git push origin "$TAG_NAME"
+
+        chmod +x scripts/generate-release-notes.sh
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
+        ./scripts/generate-release-notes.sh "$PREVIOUS_TAG" "$TAG_NAME" "$RELEASE_VERSION"
+
+        ZIP_FILES=$(ls build/libs/*.jar 2>/dev/null)
+        if [ -n "$ZIP_FILES" ]; then
+          gh release create "$TAG_NAME" \
+            --title "Policy Loop Filter v${RELEASE_VERSION}" \
+            --notes "$(cat .release_notes || echo 'Automated release')" \
+            --repo "${{ github.repository }}" \
+            $ZIP_FILES
+        else
+          echo "❌ No artifacts to upload"; exit 1
+        fi
+

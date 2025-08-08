@@ -11,31 +11,68 @@ repositories {
     mavenCentral()
 }
 
-def apim_folder = '/Users/cwilliams/Downloads/APIGateway_7.7.20210830_Core_linux-x86-64_BN02/content/system'
-def ps_folder = '/Users/cwilliams/SharedFolder/apim'
+// Configuração dinâmica do Axway API Gateway/Policy Studio
+def axway_base = System.getProperty('axway.base', '/opt/Axway')
+def apim_folder = "${axway_base}/apigateway/system"
+def ps_folder = "${axway_base}/policystudio"
 
 dependencies {
-    compile fileTree(dir: "${apim_folder}/lib", include: '*.jar')
-    compile fileTree(dir: "${apim_folder}/lib/modules", include: '*.jar')
-    compile fileTree(dir: "${apim_folder}/lib/plugins", include: '*.jar')
+    // Axway API Gateway libs
+    implementation fileTree(dir: "${apim_folder}/lib", include: '*.jar')
+    implementation fileTree(dir: "${apim_folder}/lib/jce", include: '*.jar')
+    implementation fileTree(dir: "${apim_folder}/lib/modules", include: '*.jar')
+    implementation fileTree(dir: "${apim_folder}/lib/plugins", include: '*.jar')
 
-    // policystudio
-    compile fileTree(dir: "${ps_folder}/plugins", include: '*.jar')
+    // Policy Studio libs
+    implementation fileTree(dir: "${ps_folder}/plugins", include: '*.jar')
 
-    compile files("${ps_folder}/plugins/com.vordel.rcp.filterbase_7.7.0.v20211004-1323")
-
+    // Detecta automaticamente o diretório do filterbase
+    def pluginsDir = file("${ps_folder}/plugins")
+    def filterbaseDir = pluginsDir.exists() ? pluginsDir.listFiles()?.find { it.isDirectory() && it.name.startsWith("com.vordel.rcp.filterbase") } : null
+    if (filterbaseDir) {
+        println "✅ Filterbase folder detected: ${filterbaseDir.name}"
+        implementation files("${ps_folder}/plugins/${filterbaseDir.name}")
+    } else {
+        println "⚠️  Filterbase folder not found. Using pattern include."
+        implementation fileTree(dir: "${ps_folder}/plugins", include: 'com.vordel.rcp.filterbase*/**')
+    }
 }
 
+// Copia dependências de runtime para uma pasta local (usado pelos workflows de release)
+tasks.register('copyExternalDependencies', Copy) {
+    description = 'Copia dependências de runtime para a pasta dependencies'
+    def dependenciesDir = file("dependencies")
+    dependenciesDir.mkdirs()
+    into dependenciesDir
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    from configurations.runtimeClasspath
+    rename { fileName -> "external-${fileName}" }
+}
+
+// Lista dependências de runtime (apoio à inspeção nos workflows)
+tasks.register('listDependencies') {
+    description = 'Lista as dependências do classpath de runtime'
+    doLast {
+        println "📋 Runtime classpath dependencies:"
+        configurations.runtimeClasspath.each { file ->
+            println "  - ${file.name}"
+        }
+    }
+}
+
+// Mantém o manifesto OSGi do bundle (usando a versão do projeto)
 jar {
     manifest {
-        attributes('Bundle-Name': 'Circuit Loop Filter',
-                   'Bundle-SymbolicName': 'rslr.circuit.loop;singleton:=true',
-                   'Bundle-Version': '2.0.0',
-                   'Bundle-Vendor': 'Axway, Inc.',
-                   'Bundle-ClassPath': '.',
-                   'Export-Package': 'rslr.circuit.loop',
-                   'Bundle-RequiredExecutionEnvironment': 'JavaSE-1.7',
-                   'Bundle-ManifestVersion': '2',
-                   'Require-Bundle': 'com.vordel.rcp.filterbase')
+        attributes(
+            'Bundle-Name': 'Circuit Loop Filter',
+            'Bundle-SymbolicName': 'rslr.circuit.loop;singleton:=true',
+            'Bundle-Version': "${version}",
+            'Bundle-Vendor': 'Axway, Inc.',
+            'Bundle-ClassPath': '.',
+            'Export-Package': 'rslr.circuit.loop',
+            'Bundle-RequiredExecutionEnvironment': 'JavaSE-1.7',
+            'Bundle-ManifestVersion': '2',
+            'Require-Bundle': 'com.vordel.rcp.filterbase'
+        )
     }
 }

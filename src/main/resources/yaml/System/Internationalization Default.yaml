@@ -1,0 +1,8 @@
+- type: InternationalizationFilter
+  fields:
+    type: CircuitLoopFilter
+  logging:
+    fatal: "Error in the Policy Loop Filter. Error: ${circuit.exception}"
+    failure: "Failed in the Policy Loop Filter"
+    success: "Success in the Policy Loop Filter"
+
