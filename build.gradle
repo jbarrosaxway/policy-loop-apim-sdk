@@ -90,3 +90,264 @@ jar {
         )
     }
 }
+
+// Helper function to process internationalization file
+def processInternationalizationFile(def sourceFile, def destFile) {
+    if (!sourceFile.exists()) {
+        println "❌ File not found: ${sourceFile.absolutePath}"
+        return false
+    }
+    
+    def sourceContent = sourceFile.text.trim()
+    def destContent = destFile.exists() ? destFile.text : ""
+    
+    // Check if CircuitLoopFilter already exists in the file
+    if (destContent.contains("type: CircuitLoopFilter")) {
+        println "🔄 CircuitLoopFilter already exists. Updating section..."
+        
+        // Strategy: preserve other filters and only update CircuitLoopFilter
+        def lines = destContent.split('\n')
+        def newLines = []
+        def skipSection = false
+        def inInternationalizationFilter = false
+        def foundCircuitLoopFilter = false
+        def outputNewContent = false
+        
+        for (int i = 0; i < lines.length; i++) {
+            def line = lines[i]
+            def trimmedLine = line.trim()
+            
+            // Detect start of InternationalizationFilter
+            if (trimmedLine == "type: InternationalizationFilter") {
+                inInternationalizationFilter = true
+                skipSection = false
+                newLines.add(line)
+                continue
+            }
+            
+            // If we are inside InternationalizationFilter, check if it contains CircuitLoopFilter
+            if (inInternationalizationFilter && trimmedLine == "type: CircuitLoopFilter") {
+                if (foundCircuitLoopFilter) {
+                    // We already found a CircuitLoopFilter section, skip this one
+                    skipSection = true
+                    continue
+                } else {
+                    // First occurrence, skip and replace with new content
+                    foundCircuitLoopFilter = true
+                    skipSection = true
+                    outputNewContent = true
+                    continue
+                }
+            }
+            
+            // Detect end of InternationalizationFilter section
+            if (inInternationalizationFilter && trimmedLine.startsWith("-") && trimmedLine != "type: InternationalizationFilter") {
+                inInternationalizationFilter = false
+                skipSection = false
+                // Add new content before the next section
+                if (outputNewContent) {
+                    newLines.add("")
+                    newLines.addAll(sourceContent.split('\n'))
+                    outputNewContent = false
+                }
+                newLines.add(line)
+                continue
+            }
+            
+            // If we are skipping the section, continue until the end
+            if (skipSection) {
+                continue
+            }
+            
+            newLines.add(line)
+        }
+        
+        // If we still didn't add the new content, add it at the end
+        if (outputNewContent) {
+            newLines.add("")
+            newLines.addAll(sourceContent.split('\n'))
+        }
+        
+        destFile.text = newLines.join('\n')
+        
+        println "✅ CircuitLoopFilter section updated: ${destFile.name}"
+        return true
+    } else {
+        // Add at the end if it does not exist
+        if (destContent.endsWith('\n')) {
+            destFile.text = destContent + sourceContent
+        } else {
+            destFile.text = destContent + '\n' + sourceContent
+        }
+        println "✅ Content added to the end: ${destFile.name}"
+        return true
+    }
+}
+
+// Helper function to install YAML files on Windows
+def installYamlFiles(def projectPath, def taskName) {
+    println "🚀 Installing Policy Loop Filter YAML files on Windows..."
+    println "📋 Task: ${taskName}"
+    println "📁 Project: ${projectPath}"
+    println ""
+    
+    // Validate if the path exists
+    def projectDir = new File(projectPath)
+    if (!projectDir.exists()) {
+        println "⚠️  Warning: Directory does not exist. Creating..."
+        projectDir.mkdirs()
+    }
+    
+    // Create project structure
+    def (metaInfDir, systemDir) = createProjectStructure(projectPath)
+    
+    // Copy YAML files
+    def sourceYamlDir = new File("src/main/resources/yaml")
+    
+    // Copy YAML files
+    copyYamlFiles(sourceYamlDir, metaInfDir, systemDir)
+    
+    println ""
+    println "🎉 YAML files installation completed!"
+    println "📁 Policy Studio project: ${projectPath}"
+    println ""
+    showNextSteps()
+}
+
+// Helper function to show next steps
+def showNextSteps() {
+    println "📋 Next steps:"
+    println "1. Copy the JAR built on Linux to Windows"
+    println "2. Open Policy Studio"
+    println "3. Go to Window > Preferences > Runtime Dependencies"
+    println "4. Add the JAR: policy-loop-custom-filter-${version}.jar"
+    println "5. Restart Policy Studio with -clean"
+    println "6. Search for 'Circuit Loop' in the palette"
+}
+
+// Helper function to create project directory structure
+def createProjectStructure(def projectPath) {
+    def metaInfDir = new File(projectPath, "META-INF/types/Entity/Filter/Circuit")
+    def systemDir = new File(projectPath, "System")
+    
+    metaInfDir.mkdirs()
+    systemDir.mkdirs()
+    
+    return [metaInfDir, systemDir]
+}
+
+// Helper function to copy YAML files
+def copyYamlFiles(def sourceYamlDir, def metaInfDir, def systemDir) {
+    // Copy CircuitLoopFilter.yaml
+    def sourceFilterYaml = new File(sourceYamlDir, "META-INF/types/Entity/Filter/Circuit/CircuitLoopFilter.yaml")
+    def destFilterYaml = new File(metaInfDir, "CircuitLoopFilter.yaml")
+    
+    if (sourceFilterYaml.exists()) {
+        destFilterYaml.text = sourceFilterYaml.text
+        println "✅ Copied: CircuitLoopFilter.yaml"
+    } else {
+        println "❌ File not found: ${sourceFilterYaml.absolutePath}"
+    }
+    
+    // Process internationalization file
+    def sourceIntlYaml = new File(sourceYamlDir, "System/Internationalization Default.yaml")
+    def destIntlYaml = new File(systemDir, "Internationalization Default.yaml")
+    
+    processInternationalizationFile(sourceIntlYaml, destIntlYaml)
+}
+
+// Task para instalação Windows com caminho específico
+task installWindowsToProject {
+    group = 'Installation'
+    description = 'Installs YAML in a specific Policy Studio project'
+    
+    doFirst {
+        // Get project path via system property
+        def projectPath = System.getProperty('project.path')
+        
+        if (!projectPath) {
+            // If not specified, request interactively
+            projectPath = System.console()?.readLine("📂 Enter the Policy Studio project path (ex: C:\\Users\\jbarros\\apiprojects\\my-axway-project): ")
+            
+            if (!projectPath) {
+                throw new GradleException("❌ Project path not provided! Use: -Dproject.path=C:\\path\\to\\project")
+            }
+        }
+        
+        println "📁 Project: ${projectPath}"
+        
+        // Use helper function to install YAML files
+        installYamlFiles(projectPath, "installWindowsToProject")
+    }
+}
+
+// Task para instalação no Linux
+task installLinux(type: Exec) {
+    group = 'Installation'
+    description = 'Installs the Policy Loop Filter on Linux'
+    
+    dependsOn build
+    
+    commandLine 'bash', 'scripts/install-linux.sh'
+    
+    doFirst {
+        println "🚀 Installing Policy Loop Filter on Linux..."
+        println "📁 JAR: build/libs/policy-loop-custom-filter-${version}.jar"
+        println "📁 Gateway: ${axway_base}"
+    }
+}
+
+// Task para mostrar informações do projeto
+task showProjectInfo {
+    group = 'Help'
+    description = 'Shows detailed project information'
+    
+    doLast {
+        println "📋 Policy Loop Filter APIM SDK Project Information"
+        println "=============================================="
+        println ""
+        println "🏷️  Current version: ${version}"
+        println "📦 Group: ${group}"
+        println "🔧 Java: ${sourceCompatibility}"
+        println ""
+        println "📁 Project structure:"
+        println "  - src/main/java/     # Java source code"
+        println "  - src/main/resources/ # Resources (YAML, FED, etc.)"
+        println "  - scripts/           # Installation scripts"
+        println ""
+        println "🚀 Features:"
+        println "  - Circuit Loop Filter for Axway API Gateway"
+        println "  - Support for multiple Axway versions"
+        println "  - Automated installation (Linux/Windows)"
+        println "  - Automatic semantic versioning"
+        println "  - Automatic release system"
+    }
+}
+
+// Task to show all available tasks
+task showTasks {
+    group = 'Help'
+    description = 'Shows all available tasks'
+    
+    doLast {
+        println "🚀 Available tasks:"
+        println ""
+        println "📦 Build:"
+        println "  ./gradlew build                    # Project build"
+        println "  ./gradlew clean build             # Clean + Build"
+        println ""
+        println "🔧 Configuration:"
+        println "  ./gradlew showProjectInfo         # Shows project information"
+        println ""
+        println "🔧 Linux Installation:"
+        println "  ./gradlew installLinux            # Installs on Linux (JAR + YAML)"
+        println "  ./gradlew -Daxway.base=/path installLinux  # With custom path"
+        println ""
+        println "🔧 Windows Installation:"
+        println "  ./gradlew -Dproject.path=/path installWindowsToProject  # Installs YAML in specific project"
+        println ""
+        println "❓ Help:"
+        println "  ./gradlew showTasks               # Shows this list"
+        println "  ./gradlew tasks                   # Lists all tasks"
+    }
+}
