@@ -1,4 +1,4 @@
-package com.axway.loop;
+package com.axway.aws.lambda;
 
 import com.vordel.client.manager.filter.DefaultGUIFilter;
 import com.vordel.client.manager.filter.log.LogPage;
@@ -22,7 +22,7 @@ public class CircuitLoopFilterUI extends DefaultGUIFilter {
     }
 
     public String[] getCategories() {
-        return new String[] { resolve("FILTER_GROUP_CIRCUIT_LOOP") };
+        return new String[]{resolve("FILTER_GROUP_AWS_LAMBDA")};
     }
 
     private static final String IMAGE_KEY = "filter_small"; // Usando um ícone padrão

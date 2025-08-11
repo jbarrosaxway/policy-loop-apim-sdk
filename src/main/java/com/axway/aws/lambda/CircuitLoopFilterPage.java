@@ -1,4 +1,4 @@
-package com.axway.loop;
+package com.axway.aws.lambda;
 
 import com.vordel.client.manager.wizard.VordelPage;
 import org.eclipse.swt.widgets.Composite;

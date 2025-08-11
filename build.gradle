@@ -210,7 +210,7 @@ def showNextSteps() {
 
 // Helper function to create project directory structure
 def createProjectStructure(def projectPath) {
-    def metaInfDir = new File(projectPath, "META-INF/types/Entity/Filter/LoopFilter")
+    def metaInfDir = new File(projectPath, "META-INF/types/Entity/Filter/AWSFilter")
     def systemDir = new File(projectPath, "System")
     
     metaInfDir.mkdirs()
@@ -222,7 +222,7 @@ def createProjectStructure(def projectPath) {
 // Helper function to copy YAML files
 def copyYamlFiles(def sourceYamlDir, def metaInfDir, def systemDir) {
     // Copy CircuitLoopFilter.yaml
-    def sourceFilterYaml = new File(sourceYamlDir, "META-INF/types/Entity/Filter/LoopFilter/CircuitLoopFilter.yaml")
+    def sourceFilterYaml = new File(sourceYamlDir, "META-INF/types/Entity/Filter/AWSFilter/CircuitLoopFilter.yaml")
     def destFilterYaml = new File(metaInfDir, "CircuitLoopFilter.yaml")
     
     if (sourceFilterYaml.exists()) {

@@ -1,7 +1,7 @@
 ---
 name: CircuitLoopFilter
 version: 1
-class: com.axway.loop.CircuitLoopFilter
+class: com.axway.aws.lambda.CircuitLoopFilter
 fields:
   loopType:
     type: integer

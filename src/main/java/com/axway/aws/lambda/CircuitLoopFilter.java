@@ -1,4 +1,4 @@
-package com.axway.loop;
+package com.axway.aws.lambda;
 
 import java.util.HashSet;
 import java.util.Set;

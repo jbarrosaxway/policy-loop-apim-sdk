@@ -1,4 +1,4 @@
-package com.axway.loop;
+package com.axway.aws.lambda;
 
 import com.vordel.circuit.CircuitAbortException;
 import com.vordel.circuit.InvocationEngine;
