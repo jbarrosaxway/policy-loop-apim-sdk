@@ -74,23 +74,6 @@ tasks.register('listDependencies') {
     }
 }
 
-// Mantém o manifesto OSGi do bundle (usando a versão do projeto)
-jar {
-    manifest {
-        attributes(
-            'Bundle-Name': 'Circuit Loop Filter',
-            'Bundle-SymbolicName': 'rslr.circuit.loop;singleton:=true',
-            'Bundle-Version': "${version}",
-            'Bundle-Vendor': 'Axway, Inc.',
-            'Bundle-ClassPath': '.',
-            'Export-Package': 'rslr.circuit.loop',
-            'Bundle-RequiredExecutionEnvironment': 'JavaSE-1.7',
-            'Bundle-ManifestVersion': '2',
-            'Require-Bundle': 'com.vordel.rcp.filterbase'
-        )
-    }
-}
-
 // Helper function to process internationalization file
 def processInternationalizationFile(def sourceFile, def destFile) {
     if (!sourceFile.exists()) {

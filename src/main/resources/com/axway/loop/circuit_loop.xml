@@ -1,0 +1,13 @@
+<ui>
+    <panel columns="2">
+        <NameAttribute />
+        <RadioGroupAttribute field="loopType" label="Loop Type" span="2">
+            <choice value="circuit" label="Loop a specific circuit" />
+            <choice value="expression" label="Loop on expression" />
+        </RadioGroupAttribute>
+        <TextAttribute field="loopCondition" label="Loop Condition/Expression" span="2" />
+        <ReferenceSelector field="loopCircuit" label="Circuit to Loop" selectableTypes="Circuit" title="Select Circuit" searches="Circuits" />
+        <ButtonAttribute field="configureButton" label="Configure Headers/Attributes" />
+        <TextAttribute field="maxLoops" label="Max Loops" />
+    </panel>
+</ui>

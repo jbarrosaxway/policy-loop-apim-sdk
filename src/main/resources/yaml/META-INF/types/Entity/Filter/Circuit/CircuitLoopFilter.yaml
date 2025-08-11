@@ -1,7 +1,7 @@
 ---
 name: CircuitLoopFilter
 version: 1
-class: rslr.circuit.loop.CircuitLoopFilter
+class: com.axway.loop.CircuitLoopFilter
 fields:
   loopType:
     type: integer
