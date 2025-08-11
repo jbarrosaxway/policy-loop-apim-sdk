@@ -1,4 +1,4 @@
-package com.axway.loop;
+package com.axway.aws.loop;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -13,10 +13,10 @@ import com.vordel.es.Entity;
 import com.vordel.es.EntityStore;
 import com.vordel.es.EntityStoreException;
 
-public class CircuitLoopFilter extends DefaultFilter implements DelegatingFilter {
+public class AWSLoopFilter extends DefaultFilter implements DelegatingFilter {
 	@Override
 	public Class<? extends MessageProcessor> getMessageProcessorClass() throws ClassNotFoundException {
-		return CircuitLoopProcessor.class;
+		return AWSLoopProcessor.class;
 	}
 
 	private ESPK loopCircuitPK = EntityStore.ES_NULL_PK;

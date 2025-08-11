@@ -1,14 +1,14 @@
-package com.axway.loop;
+package com.axway.aws.loop;
 
 import com.vordel.client.manager.wizard.VordelPage;
 import org.eclipse.swt.widgets.Composite;
 
-public class CircuitLoopFilterPage extends VordelPage {
+public class AWSLoopFilterPage extends VordelPage {
 
-    public CircuitLoopFilterPage() {
-        super("CircuitLoopPage");
-        setTitle(resolve("CIRCUIT_LOOP_PAGE_TITLE"));
-        setDescription(resolve("CIRCUIT_LOOP_PAGE_DESCRIPTION"));
+    public AWSLoopFilterPage() {
+        super("AWSLoopPage");
+        setTitle(resolve("AWS_LOOP_PAGE_TITLE"));
+        setDescription(resolve("AWS_LOOP_PAGE_DESCRIPTION"));
         setPageComplete(true);
     }
 
@@ -21,7 +21,7 @@ public class CircuitLoopFilterPage extends VordelPage {
     }
 
     public void createControl(Composite parent) {
-        Composite panel = render(parent, getClass().getResourceAsStream("circuit_loop.xml"));
+        Composite panel = render(parent, getClass().getResourceAsStream("aws_loop.xml"));
         setControl(panel);
         setPageComplete(true);
     }
