@@ -1,13 +1,30 @@
 <ui>
     <panel columns="2">
         <NameAttribute />
-        <RadioGroupAttribute field="loopType" label="Loop Type" span="2">
-            <choice value="circuit" label="Loop a specific circuit" />
-            <choice value="expression" label="Loop on expression" />
-        </RadioGroupAttribute>
-        <TextAttribute field="loopCondition" label="Loop Condition/Expression" span="2" />
-        <ReferenceSelector field="loopCircuit" label="Circuit to Loop" selectableTypes="Circuit" title="Select Circuit" searches="Circuits" />
-        <ButtonAttribute field="configureButton" label="Configure Headers/Attributes" />
-        <TextAttribute field="maxLoops" label="Max Loops" />
+
+        <group label="Loop type" columns="2" span="2" fill="false">
+            <RadioGroupAttribute field="loopType">
+                <choice label="while(condition) { policy; }" value="1" />
+                <choice label="do { policy } while(condition);" value="2" />
+            </RadioGroupAttribute>
+        </group>
+
+        <group label="Loop Conditions" columns="2" span="2" fill="false">
+            <TextAttribute field="loopCondition" label="Loop condition" displayName="This filter will loop if condition returns 'true'" />
+            <TextAttribute field="loopMax" label="Maximum iteration count" displayName="Maximum iteration count for this loop (use '0' for unlimited)." />
+            <TextAttribute field="loopTimeout" label="Maximum loop time (ms)" displayName="Iteration will stop after this delay has expired (use '0' for unlimited)." />
+        </group>
+
+        <group label="Filter exits in error when :" columns="2" span="2" fill="false">
+            <ButtonAttribute field="loopErrorCircuit" label="Loop Policy fails" span="2"/>
+            <ButtonAttribute field="loopErrorCondition" label="Loop Condition returns false" span="2"/>
+            <ButtonAttribute field="loopErrorMax" label="Maximum number of iteration reached" span="2"/>
+            <ButtonAttribute field="loopErrorTimeout" label="Maximum loop time reached" span="2"/>
+            <ButtonAttribute field="loopErrorEmpty" label="No iteration occurs" span="2"/>
+        </group>
+
+        <group label="Policy Target" columns="2" span="2" fill="false">
+            <ReferenceSelector field="loopCircuit" label="Policy which is called at each iteration" title="This policy is called for each loop iteration." selectableTypes="FilterCircuit" searches="ROOT_CIRCUIT_CONTAINER,CircuitContainer"/>
+        </group>
     </panel>
 </ui>
