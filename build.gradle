@@ -281,6 +281,15 @@ task installWindowsToProject {
     }
 }
 
+// Adiciona a tarefa showNextSteps que pode ser chamada diretamente
+task showNextSteps {
+    group = 'Help'
+    description = 'Shows the next steps to install the filter in Policy Studio'
+    doLast {
+        showNextSteps()
+    }
+}
+
 // Task para instalação no Linux
 task installLinux(type: Exec) {
     group = 'Installation'
