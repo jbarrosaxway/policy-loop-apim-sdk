@@ -1,4 +1,4 @@
-package com.axway.aws.loop;
+package com.axway.loop;
 
 import com.vordel.client.manager.filter.DefaultGUIFilter;
 import com.vordel.client.manager.filter.log.LogPage;
@@ -9,10 +9,10 @@ import com.vordel.client.manager.Images;
 
 import java.util.Vector;
 
-public class AWSLoopFilterUI extends DefaultGUIFilter {
+public class CircuitLoopFilterUI extends DefaultGUIFilter {
     public Vector<VordelPage> getPropertyPages() {
         Vector<VordelPage> pages = new Vector<>();
-        pages.add(new AWSLoopFilterPage());
+        pages.add(new CircuitLoopFilterPage());
         pages.add(createLogPage());
         return pages;
     }
@@ -40,6 +40,6 @@ public class AWSLoopFilterUI extends DefaultGUIFilter {
     }
 
     public String getTypeName() {
-        return resolve("AWS_LOOP_FILTER_NAME");
+        return resolve("CIRCUIT_LOOP_FILTER_NAME");
     }
 }

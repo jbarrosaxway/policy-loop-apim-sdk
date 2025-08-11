@@ -1,4 +1,4 @@
-package com.axway.aws.loop;
+package com.axway.loop;
 
 import com.vordel.circuit.CircuitAbortException;
 import com.vordel.circuit.InvocationEngine;
@@ -14,7 +14,7 @@ import com.vordel.es.Entity;
 import com.vordel.es.EntityStore;
 import com.vordel.es.EntityStoreException;
 
-public class AWSLoopProcessor extends MessageProcessor {
+public class CircuitLoopProcessor extends MessageProcessor {
 	public static final int LOOPTYPE_WHILE = 1;
 	public static final int LOOPTYPE_DOWHILE = 2;
 
@@ -47,7 +47,7 @@ public class AWSLoopProcessor extends MessageProcessor {
 		this.loopErrorTimeout = new Selector<>(entity.getStringValue("loopErrorTimeout"), Boolean.class);
 		this.loopErrorEmpty = new Selector<>(entity.getStringValue("loopErrorEmpty"), Boolean.class);
 
-		AWSLoopFilter filter = (AWSLoopFilter) getFilter();
+		CircuitLoopFilter filter = (CircuitLoopFilter) getFilter();
 		DelayedESPK loopReference = new DelayedESPK(filter.getLoopCircuitPK());
 		ESPK loopPK = loopReference.substitute(Dictionary.empty);
 		Circuit loopCircuit = null;
@@ -66,8 +66,7 @@ public class AWSLoopProcessor extends MessageProcessor {
 	}
 
 	@Override
-	public boolean invoke(Circuit c, Message m) throws CircuitAbortException {
-		AWSLoopFilter filter = (AWSLoopFilter) getFilter();
+	public boolean invoke(Circuit p, Message m) throws CircuitAbortException {
 		Integer type = loopType.substitute(m);
 
 		long start = System.currentTimeMillis();
@@ -107,7 +106,7 @@ public class AWSLoopProcessor extends MessageProcessor {
 		while (loop) {
 			/* execute loop (and exit if the loop circuit return false) */
 			m.put("loopCount", count);
-			loop = executeLoop(c, m);
+			loop = executeLoop(p, m);
 			count++;
 			if (!loop) {
 				/*
