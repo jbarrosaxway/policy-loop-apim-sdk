@@ -1,4 +1,4 @@
-package com.axway.aws.lambda;
+package com.axway.loop;
 
 import com.vordel.client.manager.filter.DefaultGUIFilter;
 import com.vordel.client.manager.filter.log.LogPage;
