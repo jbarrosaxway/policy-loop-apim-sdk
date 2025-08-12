@@ -1,6 +1,6 @@
 - type: InternationalizationFilter
   fields:
-    type: AWSLoopFilter
+    type: CircuitLoopFilter
   logging:
     fatal: "Error in the Policy Loop Filter. Error: ${circuit.exception}"
     failure: "Failed in the Policy Loop Filter"

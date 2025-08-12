@@ -1,4 +1,4 @@
-package com.axway.aws.lambda;
+package com.axway.loop;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -22,7 +22,7 @@ public class CircuitLoopFilter extends DefaultFilter implements DelegatingFilter
 	public Class getConfigPanelClass() throws ClassNotFoundException {
 		// Avoid any compile or runtime dependencies on SWT and other UI
 		// libraries by lazily loading the class when required.
-		return Class.forName("com.axway.aws.lambda.CircuitLoopFilterUI");
+		return Class.forName("com.axway.loop.CircuitLoopFilterUI");
 	}
 
 	private ESPK loopCircuitPK = EntityStore.ES_NULL_PK;
