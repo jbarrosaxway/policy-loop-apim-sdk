@@ -1,0 +1,51 @@
+<!-- This type defines the filter configuration data for the Circuit Loop filter
+which executes circuits in a loop from Axway API Gateway "class" - The
+filter classname. "loopType" - The type of loop (while, do-while)
+	"loopCondition" - The condition for the loop "loopMax" - Maximum number of iterations
+	"loopTimeout" - Maximum time for the loop in milliseconds
+	"loopCircuit" - The circuit to execute in the loop
+	Error handling fields:
+	"loopErrorCircuit" - Exit on circuit failure
+	"loopErrorCondition" - Exit on condition failure
+	"loopErrorMax" - Exit on max iterations reached
+	"loopErrorTimeout" - Exit on timeout reached
+	"loopErrorEmpty" - Exit on no iterations -->
+
+<entityStoreData>
+	<entityType name="CircuitLoopFilter" extends="AWSFilter">
+		<constant name="class" type="string" value="com.axway.aws.lambda.CircuitLoopFilter" />
+		<field name="loopType" type="string" cardinality="1" />
+		<field name="loopCondition" type="string" cardinality="1" />
+		<field name="loopMax" type="string" cardinality="1" />
+		<field name="loopTimeout" type="string" cardinality="1" />
+		<field name="loopCircuit" type="^FilterCircuit" cardinality="1" />
+		<field name="loopErrorCircuit" type="boolean" cardinality="1" />
+		<field name="loopErrorCondition" type="boolean" cardinality="1" />
+		<field name="loopErrorMax" type="boolean" cardinality="1" />
+		<field name="loopErrorTimeout" type="boolean" cardinality="1" />
+		<field name="loopErrorEmpty" type="boolean" cardinality="1" />
+	</entityType>
+
+	
+
+	<!-- Internationalization for logging / audit trail -->
+	<entity xmlns="http://www.vordel.com/2005/06/24/entityStore"
+		type="InternationalizationFilter">
+		<key type="Internationalization">
+			<id field="name" value="Internationalization Default" />
+		</key>
+		<fval name="type">
+			        <value>CircuitLoopFilter</value>
+		</fval>
+		<fval name="logFatal">
+			        <value>Error in the Circuit Loop filter. Error: ${circuit.exception}</value>
+		</fval>
+		<fval name="logFailure">
+			        <value>Failed in the Circuit Loop filter</value>
+		</fval>
+		<fval name="logSuccess">
+			        <value>Success in the Circuit Loop filter</value>
+		</fval>
+	</entity>
+
+</entityStoreData>
