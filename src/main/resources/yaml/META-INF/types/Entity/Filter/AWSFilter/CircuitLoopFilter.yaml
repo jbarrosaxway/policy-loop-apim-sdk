@@ -1,5 +1,5 @@
 ---
-name: CircuitLoopFilter
+name: AWSLoopFilter
 version: 1
 class: com.axway.aws.lambda.CircuitLoopFilter
 fields:
