@@ -38,9 +38,9 @@ dependencies {
     }
 }
 
-// Copia SOMENTE dependências AWS (se existirem). Pasta não é criada se não houver matching.
+// Copia dependências externas (se existirem). Pasta não é criada se não houver matching.
 tasks.register('copyExternalDependencies', Copy) {
-    description = 'Copia dependências AWS (se houver) para a pasta dependencies'
+    description = 'Copia dependências externas (se houver) para a pasta dependencies'
     into file("dependencies")
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
     from(configurations.runtimeClasspath) {
@@ -55,9 +55,9 @@ tasks.register('copyExternalDependencies', Copy) {
     }
     doFirst {
         // Se não houver arquivos para copiar, desabilita a task e evita criar diretório vazio
-        def hasAws = configurations.runtimeClasspath.find { it.name.contains('aws-java-sdk') } != null
-        if (!hasAws) {
-            logger.lifecycle("No AWS dependencies found; skipping copyExternalDependencies")
+        def hasExternal = configurations.runtimeClasspath.find { it.name.contains('aws-java-sdk') } != null
+        if (!hasExternal) {
+            logger.lifecycle("No external dependencies found; skipping copyExternalDependencies")
             enabled = false
         }
     }
@@ -210,7 +210,7 @@ def showNextSteps() {
 
 // Helper function to create project directory structure
 def createProjectStructure(def projectPath) {
-    def metaInfDir = new File(projectPath, "META-INF/types/Entity/Filter/AWSFilter")
+    def metaInfDir = new File(projectPath, "META-INF/types/Entity/Filter/LoopFilter")
     def systemDir = new File(projectPath, "System")
     
     metaInfDir.mkdirs()
@@ -222,7 +222,7 @@ def createProjectStructure(def projectPath) {
 // Helper function to copy YAML files
 def copyYamlFiles(def sourceYamlDir, def metaInfDir, def systemDir) {
     // Copy CircuitLoopFilter.yaml
-    def sourceFilterYaml = new File(sourceYamlDir, "META-INF/types/Entity/Filter/AWSFilter/CircuitLoopFilter.yaml")
+    def sourceFilterYaml = new File(sourceYamlDir, "META-INF/types/Entity/Filter/LoopFilter/CircuitLoopFilter.yaml")
     def destFilterYaml = new File(metaInfDir, "CircuitLoopFilter.yaml")
     
     if (sourceFilterYaml.exists()) {
