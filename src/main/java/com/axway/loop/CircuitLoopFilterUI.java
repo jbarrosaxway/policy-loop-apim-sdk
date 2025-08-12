@@ -22,7 +22,7 @@ public class CircuitLoopFilterUI extends DefaultGUIFilter {
     }
 
     public String[] getCategories() {
-        return new String[]{resolve("FILTER_GROUP_CIRCUIT_LOOP")};
+        return new String[]{resolve("FILTER_GROUP_CIRCUIT")};
     }
 
     private static final String IMAGE_KEY = "amazon"; // Usando o mesmo ícone do projeto de exemplo
