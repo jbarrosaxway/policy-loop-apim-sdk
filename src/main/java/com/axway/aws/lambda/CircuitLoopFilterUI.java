@@ -25,7 +25,7 @@ public class CircuitLoopFilterUI extends DefaultGUIFilter {
         return new String[]{resolve("FILTER_GROUP_AWS_LAMBDA")};
     }
 
-    private static final String IMAGE_KEY = "filter_small"; // Usando um ícone padrão
+    private static final String IMAGE_KEY = "amazon"; // Usando o mesmo ícone do projeto de exemplo
 
     public String getSmallIconId() {
         return IMAGE_KEY;
