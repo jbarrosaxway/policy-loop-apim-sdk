@@ -1,0 +1,59 @@
+# Docker ignore file for Policy Loop Filter
+# Excludes unnecessary files from Docker build context
+
+# Build artifacts
+build/
+.gradle/
+gradle/
+gradlew
+gradlew.bat
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# Git
+.git/
+.gitignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Scripts (keep only essential ones)
+scripts/
+!scripts/linux/install-filter.sh
+
+# Dependencies
+dependencies/
+lib/
+
+# Test files
+src/test/
+test/
+
+# Backup files
+*.backup
+*.bak
+*.old
+
+# Large files
+*.run
+*.tar.gz
+*.zip
