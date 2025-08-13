@@ -13,6 +13,7 @@ import com.vordel.es.ESPK;
 import com.vordel.es.Entity;
 import com.vordel.es.EntityStore;
 import com.vordel.es.EntityStoreException;
+import com.vordel.trace.Trace;
 
 public class CircuitLoopProcessor extends MessageProcessor {
 	public static final int LOOPTYPE_WHILE = 1;
@@ -81,6 +82,13 @@ public class CircuitLoopProcessor extends MessageProcessor {
 		int max = max(m);
 		int count = 0;
 
+		// Log inicial com configurações
+		Trace.info("=== Circuit Loop Processor Starting ===");
+		Trace.info("Loop Type: " + type + " (1=while, 2=do-while)");
+		Trace.info("Max Iterations: " + max + " (0=unlimited)");
+		Trace.info("Timeout: " + timeout + "ms (0=unlimited)");
+		Trace.info("Start Time: " + start);
+
 		/*
 		 * difference between while and do/while loops is only for the first
 		 * round
@@ -88,15 +96,20 @@ public class CircuitLoopProcessor extends MessageProcessor {
 		switch (type) {
 		case LOOPTYPE_WHILE:
 			/* check condition before first round */
+			Trace.info("WHILE loop - checking initial condition");
 			loop = condition(m);
+			Trace.info("Initial condition result: " + loop);
 
 			if (!loop) {
 				/* we are going to skip the loop, check for error condition */
+				Trace.info("Loop skipped - checking error condition for empty loop");
 				result = !isErrorCondition(m, loopErrorEmpty);
+				Trace.info("Error condition result: " + result + " (final result: " + result + ")");
 			}
 			break;
 		case LOOPTYPE_DOWHILE:
 			/* check condition after first round */
+			Trace.info("DO-WHILE loop - starting with loop=true");
 			loop = true;
 			break;
 		default:
@@ -105,42 +118,66 @@ public class CircuitLoopProcessor extends MessageProcessor {
 
 		while (loop) {
 			/* execute loop (and exit if the loop circuit return false) */
+			Trace.info("Loop iteration #" + count + " starting");
 			m.put("loopCount", count);
-			loop = executeLoop(p, m);
+			
+			// Executar o loop
+			boolean loopResult = executeLoop(p, m);
+			Trace.info("Loop execution result: " + loopResult);
+			
+			loop = loopResult;
 			count++;
+			
 			if (!loop) {
 				/*
 				 * loop circuit did return an error, check for error condition
 				 */
+				Trace.info("Loop circuit failed - checking error condition for circuit failure");
 				result = !isErrorCondition(m, loopErrorCircuit);
+				Trace.info("Error condition result: " + result + " (final result: " + result + ")");
+				Trace.info("Loop EXIT: Circuit failure");
 			} else if (timeout > 0) {
 				/* Check if the current loop has expired */
-				loop = System.currentTimeMillis() <= (start + timeout);
+				long currentTime = System.currentTimeMillis();
+				long elapsed = currentTime - start;
+				loop = currentTime <= (start + timeout);
+				
+				Trace.info("Timeout check: elapsed=" + elapsed + "ms, timeout=" + timeout + "ms, loop=" + loop);
 
 				if (!loop) {
 					/*
 					 * expiration time has exhausted, check for error condition
 					 */
+					Trace.info("Timeout exceeded - checking error condition for timeout");
 					result = !isErrorCondition(m, loopErrorTimeout);
+					Trace.info("Error condition result: " + result + " (final result: " + result + ")");
+					Trace.info("Loop EXIT: Timeout exceeded");
 				} else if (max > 0) {
-					
-
 					/* Check if the maximum iteration count has been reached */
 					loop = count < max;
+					Trace.info("Max iterations check: count=" + count + ", max=" + max + ", loop=" + loop);
 
 					if (!loop) {
 						/*
 						 * max iteration count was exhausted, check for error
 						 * condition
 						 */
+						Trace.info("Max iterations reached - checking error condition for max iterations");
 						result = !isErrorCondition(m, loopErrorMax);
+						Trace.info("Error condition result: " + result + " (final result: " + result + ")");
+						Trace.info("Loop EXIT: Max iterations reached");
 					} else {
 						/* check if we need more iteration */
+						Trace.info("Checking loop condition for next iteration");
 						loop = condition(m);
+						Trace.info("Loop condition result: " + loop);
 
 						if (!loop) {
 							/* not looping anymore, check for error condition */
+							Trace.info("Loop condition false - checking error condition for condition failure");
 							result = !isErrorCondition(m, loopErrorCondition);
+							Trace.info("Error condition result: " + result + " (final result: " + result + ")");
+							Trace.info("Loop EXIT: Condition false");
 						}
 					}
 				}
@@ -157,6 +194,7 @@ public class CircuitLoopProcessor extends MessageProcessor {
 			throw new CircuitAbortException("Could not evaluate boolean expression " + attribute.getLiteral());
 		}
 
+		Trace.debug("isErrorCondition evaluating: " + attribute.getLiteral() + " = " + result);
 		return result;
 	}
 
@@ -167,6 +205,7 @@ public class CircuitLoopProcessor extends MessageProcessor {
 			throw new CircuitAbortException("Could not evaluate boolean expression " + loopCondition.getLiteral());
 		}
 
+		Trace.debug("Loop condition evaluating: " + loopCondition.getLiteral() + " = " + result);
 		return result;
 	}
 
@@ -199,6 +238,14 @@ public class CircuitLoopProcessor extends MessageProcessor {
 	}
 
 	private boolean executeLoop(Circuit p, Message m) throws CircuitAbortException {
-		return loopCircuit == null ? false : InvocationEngine.invokeCircuit(loopCircuit, loopContext, m);
+		if (loopCircuit == null) {
+			Trace.warn("executeLoop: loopCircuit is null, returning false");
+			return false;
+		}
+		
+		Trace.debug("executeLoop: invoking circuit " + loopCircuit.getName());
+		boolean result = InvocationEngine.invokeCircuit(loopCircuit, loopContext, m);
+		Trace.debug("executeLoop: circuit result = " + result);
+		return result;
 	}
 }
