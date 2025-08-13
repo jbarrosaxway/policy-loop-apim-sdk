@@ -239,7 +239,7 @@ public class CircuitLoopProcessor extends MessageProcessor {
 
 	private boolean executeLoop(Circuit p, Message m) throws CircuitAbortException {
 		if (loopCircuit == null) {
-			Trace.warn("executeLoop: loopCircuit is null, returning false");
+			Trace.info("executeLoop: loopCircuit is null, returning false");
 			return false;
 		}
 		
